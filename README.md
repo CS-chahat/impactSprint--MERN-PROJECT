@@ -7,6 +7,11 @@ This template provides a minimal setup to get React working in Vite with HMR and
     <strong>Big Impact. Small Sprints.</strong><br/>
     A full-stack micro-volunteering platform connecting skilled professionals with NGOs through focused, time-bounded sprints.
   </p>
+  <p align="center">
+  <a href="https://impactsprint.onrender.com" target="_blank">
+    <img src="https://img.shields.io/badge/Live%20Demo-Visit%20App-brightgreen?style=for-the-badge&logo=render" alt="Live Demo" />
+  </a>
+</p>
 </p>
 
 Currently, two official plugins are available:
