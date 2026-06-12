@@ -13,48 +13,42 @@ const sprintRoutes = require("./routes/sprintRoutes");
 
 const app = express();
 
-// ── Middleware ──
+// --- Middleware ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
+// Configure CORS
 const corsOrigin = (process.env.CORS_ORIGIN || "http://localhost:5173")
-    .split(",")
-    .map((o) => o.trim());
+  .split(",")
+  .map((o) => o.trim());
 
 app.use(
-    cors({
-        origin: corsOrigin.length === 1 ? corsOrigin[0] : corsOrigin,
-        credentials: true,
-    })
+  cors({
+    origin: corsOrigin.length === 1 ? corsOrigin[0] : corsOrigin,
+    credentials: true,
+  })
 );
 
-// ── API Routes ──
+// --- Static Files ---
+// Serve static files from the frontend build directory
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+// --- API Routes ---
 app.use("/api/auth", authRoutes);
 app.use("/api/sprints", sprintRoutes);
-app.use(express.static(path.join(__dirname, "public"))); //new
 
-// ── Health check ──
+// Render Health Check
 app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// ── 404 fallback ──
-// app.use((req, res) => {
-//     res.status(404).json({ message: `Route ${req.originalUrl} not found` });
-// }); 
+// --- Frontend Catch-All Route ---
+// Handle any React frontend routing requests
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-}); //new
-
-// ── Global error handler ──
-app.use((err, req, res, next) => {
-    console.error("💥", err.stack);
-    res.status(500).json({ message: "Internal server error" });
+  res.sendFile(path.join(__dirname, "../frontend/dist", "index.html"));
 });
-
-// ── Start ──
 const PORT = process.env.PORT || 5001;
 
 const start = async () => {
