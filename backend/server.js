@@ -54,9 +54,9 @@ const PORT = process.env.PORT || 5001;
 const start = async () => {
     await connectDB();
     await seedAdmin(); // ensure fixed admin exists on every boot
-    app.listen(PORT, "127.0.0.1", () => {
-        console.log(`🚀 Backend running on http://127.0.0.1:${PORT}`);
-    });
+    app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Backend running on port ${PORT}`);
+});
 };
 
 start();
