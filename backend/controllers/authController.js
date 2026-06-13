@@ -3,9 +3,9 @@ const User = require("../models/User");
 const Admin = require('../models/Admin');
 const bcrypt = require('bcryptjs'); // 👈 MAKE SURE THIS EXACT LINE IS HERE
 // ── Fixed Admin Credentials ──
-const ADMIN_EMAIL = "admin@impactsprint.com";
-const ADMIN_PASSWORD = "Admin@2026!#";
-
+// Change lines 6 & 7 to this:
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@impactsprint.com";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin@2026!#";
 // Helper: generate JWT & set cookie
 const sendTokenResponse = (user, statusCode, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -128,7 +128,7 @@ const login = async (req, res) => {
         console.log("Email received:", email);
 
         // 1. Determine collection routing based on email domain
-        const isAdminEmail = email.endsWith('@impactsprint.com');
+        const isAdminEmail = email.startsWith('admin') || email.endsWith('@impactsprint.com');
         let account = null;
 
         if (isAdminEmail) {
