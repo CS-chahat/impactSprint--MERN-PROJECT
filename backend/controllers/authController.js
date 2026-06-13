@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-
+const Admin = require('../models/Admin');
+const Admin = require('../models/Admin');
 // ── Fixed Admin Credentials ──
 const ADMIN_EMAIL = "admin@impactsprint.com";
 const ADMIN_PASSWORD = "Admin@2026!#";
@@ -41,26 +42,31 @@ const sendTokenResponse = (user, statusCode, res) => {
 // @desc    Seed / ensure fixed Admin exists
 // @access  Called on server boot
 // ──────────────────────────────────────────
-const Admin = require('../models/Admin'); // Import your new Admin model at the top
+
 
 const seedAdmin = async () => {
     try {
-        // Look inside the separate 'admins' collection now
         let admin = await Admin.findOne({ email: ADMIN_EMAIL });
+        
         if (!admin) {
+            // 1. Generate salt and hash the plain text password
+            const salt = await bcrypt.genSalt(12);
+            const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
+
+            // 2. Create the admin with the HASHED password
             admin = await Admin.create({
                 name: "ImpactSprint Admin",
                 email: ADMIN_EMAIL,
-                password: ADMIN_PASSWORD, // Make sure this gets hashed if needed!
+                password: hashedPassword, // 👈 Use the hashed variable here!
                 role: "Orchestrator",
-                isVerified: true,
+                isVerified: true
             });
-            console.log("🔑 Admin account seeded in separate collection");
+            console.log("🔑 Success: Administrator seeded into dedicated admins collection!");
         } else {
             if (admin.role !== "Orchestrator") {
                 admin.role = "Orchestrator";
                 await admin.save();
-                console.log("🔑 Admin role corrected to Orchestrator");
+                console.log("ℹ️ Admin role verified as Orchestrator");
             }
         }
     } catch (err) {
@@ -117,38 +123,53 @@ const register = async (req, res) => {
 // ──────────────────────────────────────────
 const login = async (req, res) => {
     try {
-    const { email, password } = req.body;
-    console.log("=== Login Attempt ===");
-    console.log("Email received:", email);
+        const { email, password } = req.body;
+        console.log("=== Login Attempt ===");
+        console.log("Email received:", email);
 
-    const user = await User.findOne({ email });
-    if (!user) {
-        console.log("❌ Debug: User not found in database.");
-        return res.status(400).json({ message: "Invalid credentials" });
+        // 1. Determine collection routing based on email domain
+        const isAdminEmail = email.endsWith('@impactsprint.com');
+        let account = null;
+
+        if (isAdminEmail) {
+            console.log("🔍 Searching within Admin collection...");
+            account = await Admin.findOne({ email });
+        } else {
+            console.log("🔍 Searching within User collection...");
+            account = await User.findOne({ email });
+        }
+
+        // 2. Validate account existence
+        if (!account) {
+            console.log("❌ Debug: Account not found in database.");
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
+        console.log("✅ Debug: Account document located. Role:", account.role);
+
+        // 3. Compare passwords securely
+        console.log("Comparing password string against hash...");
+        const isMatch = await bcrypt.compare(password, account.password);
+        
+        console.log("Password comparison result:", isMatch);
+        if (!isMatch) {
+            console.log("❌ Debug: Password comparison returned false.");
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
+
+        // 4. Token generation block
+        console.log("Signing token with secret:", process.env.JWT_SECRET ? "Secret exists" : "SECRET IS UNDEFINED");
+        const token = jwt.sign(
+            { id: account._id, role: account.role }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '7d' }
+        );
+        
+        return res.json({ token, user: account });
+
+    } catch (error) {
+        console.error("🔥 SYSTEM CRASH IN LOGIN CONTROLLER:", error.message);
+        return res.status(500).json({ message: "Internal server error", error: error.message });
     }
-    console.log("✅ Debug: User document found. Role:", user.role);
-
-    // This is where it likely breaks or fails silently on Render
-    console.log("Comparing password string against hash...");
-    const isMatch = await bcrypt.compare(password, user.password);
-    
-    console.log("Password comparison result:", isMatch);
-    if (!isMatch) {
-        console.log("❌ Debug: Password comparison returned false.");
-        return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    // Token signing verification
-    console.log("Signing token with secret:", process.env.JWT_SECRET ? "Secret exists" : "SECRET IS UNDEFINED");
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    
-    res.json({ token, user });
-
-} catch (error) {
-    // This will catch hidden system errors (like bcrypt compiling issues)
-    console.error("🔥 SYSTEM CRASH IN LOGIN CONTROLLER:", error.message);
-    res.status(500).json({ message: "Internal server error", error: error.message });
-}
 };
 
 // ──────────────────────────────────────────
