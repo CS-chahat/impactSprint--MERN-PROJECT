@@ -5,8 +5,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
-const { seedAdmin } = require("./controllers/authController");
-
+const { seedAdmin } = require("./controllers/authController.js"); 
 // ── Route imports ──
 const authRoutes = require("./routes/authRoutes");
 const sprintRoutes = require("./routes/sprintRoutes");

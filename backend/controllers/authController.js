@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Admin = require('../models/Admin');
-const Admin = require('../models/Admin');
+
 // ── Fixed Admin Credentials ──
 const ADMIN_EMAIL = "admin@impactsprint.com";
 const ADMIN_PASSWORD = "Admin@2026!#";
