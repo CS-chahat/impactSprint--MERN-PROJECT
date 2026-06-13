@@ -41,20 +41,22 @@ const sendTokenResponse = (user, statusCode, res) => {
 // @desc    Seed / ensure fixed Admin exists
 // @access  Called on server boot
 // ──────────────────────────────────────────
+const Admin = require('../models/Admin'); // Import your new Admin model at the top
+
 const seedAdmin = async () => {
     try {
-        let admin = await User.findOne({ email: ADMIN_EMAIL });
+        // Look inside the separate 'admins' collection now
+        let admin = await Admin.findOne({ email: ADMIN_EMAIL });
         if (!admin) {
-            admin = await User.create({
+            admin = await Admin.create({
                 name: "ImpactSprint Admin",
                 email: ADMIN_EMAIL,
-                password: ADMIN_PASSWORD,
+                password: ADMIN_PASSWORD, // Make sure this gets hashed if needed!
                 role: "Orchestrator",
                 isVerified: true,
             });
-            console.log("🔑 Admin account seeded");
+            console.log("🔑 Admin account seeded in separate collection");
         } else {
-            // Always enforce Orchestrator role
             if (admin.role !== "Orchestrator") {
                 admin.role = "Orchestrator";
                 await admin.save();
@@ -65,7 +67,6 @@ const seedAdmin = async () => {
         console.error("Admin seed error:", err.message);
     }
 };
-
 // ──────────────────────────────────────────
 // @route   POST /api/auth/register
 // @desc    Register a new NGO or Professional
