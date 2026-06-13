@@ -46,31 +46,33 @@ const sendTokenResponse = (user, statusCode, res) => {
 
 const seedAdmin = async () => {
     try {
-        let admin = await Admin.findOne({ email: ADMIN_EMAIL });
+        console.log("=========================================");
+        console.log("⏳ SEED CHECK: Initialization script triggered...");
+        
+        const emailToSeed = process.env.ADMIN_EMAIL || "admin@impactsprint.com";
+        const passwordToSeed = process.env.ADMIN_PASSWORD || "Admin@2026!#";
+        
+        console.log(`📡 SEED CHECK: Looking for existing admin with email: ${emailToSeed}`);
+        let admin = await Admin.findOne({ email: emailToSeed });
         
         if (!admin) {
-            // 1. Generate salt and hash the plain text password
-            const salt = await bcrypt.genSalt(12);
-            const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
-
-            // 2. Create the admin with the HASHED password
+            console.log("📡 SEED CHECK: No admin found. Attempting to write new document...");
             admin = await Admin.create({
                 name: "ImpactSprint Admin",
-                email: ADMIN_EMAIL,
-                password: hashedPassword, // 👈 Use the hashed variable here!
+                email: emailToSeed,
+                password: passwordToSeed, 
                 role: "Orchestrator",
                 isVerified: true
             });
-            console.log("🔑 Success: Administrator seeded into dedicated admins collection!");
+            console.log("🔑 SEED SUCCESS: Admin account generated inside database!");
         } else {
-            if (admin.role !== "Orchestrator") {
-                admin.role = "Orchestrator";
-                await admin.save();
-                console.log("ℹ️ Admin role verified as Orchestrator");
-            }
+            console.log(`ℹ️ SEED INFO: Admin already exists with ID: ${admin._id} and Role: ${admin.role}`);
         }
+        console.log("=========================================");
     } catch (err) {
-        console.error("Admin seed error:", err.message);
+        console.log("=========================================");
+        console.error("🔥 SEED CRASH: Script hit a hard error:", err.message);
+        console.log("=========================================");
     }
 };
 // ──────────────────────────────────────────
@@ -124,51 +126,52 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log("=== Login Attempt ===");
-        console.log("Email received:", email);
+        console.log("=========================================");
+        console.log(`📥 LOGIN ATTEMPT: Email entered -> "${email}"`);
+        console.log(`📥 LOGIN ATTEMPT: Password length -> ${password ? password.length : 0} chars`);
 
-        // 1. Determine collection routing based on email domain
         const isAdminEmail = email.startsWith('admin') || email.endsWith('@impactsprint.com');
+        console.log(`🔍 LOGIN ROUTING: Is this routed as an admin? -> ${isAdminEmail}`);
+
         let account = null;
-
         if (isAdminEmail) {
-            console.log("🔍 Searching within Admin collection...");
             account = await Admin.findOne({ email });
+            console.log(`🔍 DB SEARCH: Admin find result -> ${account ? "DOCUMENT FOUND" : "NOT FOUND IN DB"}`);
         } else {
-            console.log("🔍 Searching within User collection...");
             account = await User.findOne({ email });
+            console.log(`🔍 DB SEARCH: User find result -> ${account ? "DOCUMENT FOUND" : "NOT FOUND IN DB"}`);
         }
 
-        // 2. Validate account existence
         if (!account) {
-            console.log("❌ Debug: Account not found in database.");
+            console.log("❌ LOGIN FAIL: Account matching email does not exist.");
+            console.log("=========================================");
             return res.status(400).json({ message: "Invalid credentials" });
         }
-        console.log("✅ Debug: Account document located. Role:", account.role);
 
-        // 3. Compare passwords securely
-        console.log("Comparing password string against hash...");
+        console.log(`🔑 CRYPTO CHECK: Comparing text password against DB hash...`);
         const isMatch = await bcrypt.compare(password, account.password);
-        
-        console.log("Password comparison result:", isMatch);
+        console.log(`🔑 CRYPTO CHECK: Does password match hash? -> ${isMatch}`);
+
         if (!isMatch) {
-            console.log("❌ Debug: Password comparison returned false.");
+            console.log("❌ LOGIN FAIL: Password comparison mismatch.");
+            console.log("=========================================");
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
-        // 4. Token generation block
-        console.log("Signing token with secret:", process.env.JWT_SECRET ? "Secret exists" : "SECRET IS UNDEFINED");
+        console.log("🎯 LOGIN SUCCESS: Generating JWT session token...");
         const token = jwt.sign(
             { id: account._id, role: account.role }, 
-            process.env.JWT_SECRET, 
+            process.env.JWT_SECRET || "fallback_secret", 
             { expiresIn: '7d' }
         );
         
+        console.log("=========================================");
         return res.json({ token, user: account });
 
     } catch (error) {
-        console.error("🔥 SYSTEM CRASH IN LOGIN CONTROLLER:", error.message);
-        return res.status(500).json({ message: "Internal server error", error: error.message });
+        console.error("🔥 LOGIN CRASH: Internal server catch loop:", error.message);
+        console.log("=========================================");
+        return res.status(500).json({ message: "Internal server error" });
     }
 };
 
