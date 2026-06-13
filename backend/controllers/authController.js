@@ -116,33 +116,38 @@ const register = async (req, res) => {
 // ──────────────────────────────────────────
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+    const { email, password } = req.body;
+    console.log("=== Login Attempt ===");
+    console.log("Email received:", email);
 
-        if (!email || !password) {
-            return res.status(400).json({ message: "Please provide email and password" });
-        }
-
-        // Fetch user WITH password field
-        const user = await User.findOne({ email }).select("+password");
-        if (!user) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-
-        const isMatch = await user.matchPassword(password);
-        if (!isMatch) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-
-        // Ensure fixed admin always keeps Orchestrator role
-        if (email === ADMIN_EMAIL && user.role !== "Orchestrator") {
-            user.role = "Orchestrator";
-            await user.save();
-        }
-
-        sendTokenResponse(user, 200, res);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    const user = await User.findOne({ email });
+    if (!user) {
+        console.log("❌ Debug: User not found in database.");
+        return res.status(400).json({ message: "Invalid credentials" });
     }
+    console.log("✅ Debug: User document found. Role:", user.role);
+
+    // This is where it likely breaks or fails silently on Render
+    console.log("Comparing password string against hash...");
+    const isMatch = await bcrypt.compare(password, user.password);
+    
+    console.log("Password comparison result:", isMatch);
+    if (!isMatch) {
+        console.log("❌ Debug: Password comparison returned false.");
+        return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // Token signing verification
+    console.log("Signing token with secret:", process.env.JWT_SECRET ? "Secret exists" : "SECRET IS UNDEFINED");
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    
+    res.json({ token, user });
+
+} catch (error) {
+    // This will catch hidden system errors (like bcrypt compiling issues)
+    console.error("🔥 SYSTEM CRASH IN LOGIN CONTROLLER:", error.message);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+}
 };
 
 // ──────────────────────────────────────────
