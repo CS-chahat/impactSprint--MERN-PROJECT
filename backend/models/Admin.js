@@ -37,5 +37,5 @@ AdminSchema.pre('save', async function(next) {
 // backend/models/Admin.js
 
 // 💡 Force a completely fresh collection name path:
-module.exports = mongoose.model('Admin', AdminSchema, 'system_admins');
+module.exports = mongoose.model('Admin', AdminSchema, 'admins');
 // This explicitly creates a separate collection named 'admins' in your database

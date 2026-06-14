@@ -46,33 +46,31 @@ const sendTokenResponse = (user, statusCode, res) => {
 
 const seedAdmin = async () => {
     try {
-        console.log("=========================================");
-        console.log("⏳ SEED CHECK: Initialization script triggered...");
+        console.log("⏳ SEED CHECK: Triggering script...");
         
         const emailToSeed = process.env.ADMIN_EMAIL || "admin@impactsprint.com";
         const passwordToSeed = process.env.ADMIN_PASSWORD || "Admin@2026!#";
-        
-        console.log(`📡 SEED CHECK: Looking for existing admin with email: ${emailToSeed}`);
+
         let admin = await Admin.findOne({ email: emailToSeed });
         
         if (!admin) {
-            console.log("📡 SEED CHECK: No admin found. Attempting to write new document...");
+            // 💡 FIX: Manually hash the password right here before saving!
+            const salt = await bcrypt.genSalt(10);
+            const encryptedPassword = await bcrypt.hash(passwordToSeed, salt);
+
             admin = await Admin.create({
                 name: "ImpactSprint Admin",
                 email: emailToSeed,
-                password: passwordToSeed, 
+                password: encryptedPassword, // 👈 Pass the securely hashed string here!
                 role: "Orchestrator",
                 isVerified: true
             });
             console.log("🔑 SEED SUCCESS: Admin account generated inside database!");
         } else {
-            console.log(`ℹ️ SEED INFO: Admin already exists with ID: ${admin._id} and Role: ${admin.role}`);
+            console.log("ℹ️ SEED INFO: Admin already exists.");
         }
-        console.log("=========================================");
     } catch (err) {
-        console.log("=========================================");
-        console.error("🔥 SEED CRASH: Script hit a hard error:", err.message);
-        console.log("=========================================");
+        console.error("🔥 SEED CRASH:", err.message);
     }
 };
 // ──────────────────────────────────────────
