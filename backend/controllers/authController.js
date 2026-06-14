@@ -121,12 +121,14 @@ const register = async (req, res) => {
 // @desc    Login (Admin, NGO, or Professional)
 // @access  Public
 // ──────────────────────────────────────────
+// @route   POST /api/auth/login
+// @desc    Login (Admin, NGO, or Professional)
+// @access  Public
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
         console.log("=========================================");
         console.log(`📥 LOGIN ATTEMPT: Email entered -> "${email}"`);
-        console.log(`📥 LOGIN ATTEMPT: Password length -> ${password ? password.length : 0} chars`);
 
         const isAdminEmail = email.startsWith('admin') || email.endsWith('@impactsprint.com');
         console.log(`🔍 LOGIN ROUTING: Is this routed as an admin? -> ${isAdminEmail}`);
@@ -156,18 +158,14 @@ const login = async (req, res) => {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
-        console.log("🎯 LOGIN SUCCESS: Generating JWT session token...");
-        const token = jwt.sign(
-            { id: account._id, role: account.role }, 
-            process.env.JWT_SECRET || "fallback_secret", 
-            { expiresIn: '7d' }
-        );
-        
+        console.log("🎯 LOGIN SUCCESS: Packaging response payload...");
         console.log("=========================================");
-        return res.json({ token, user: account });
+        
+        // 💡 FIX: Route the authenticated admin through your exact token system format!
+        return sendTokenResponse(account, 200, res);
 
     } catch (error) {
-        console.error("🔥 LOGIN CRASH: Internal server catch loop:", error.message);
+        console.error("🔥 LOGIN CRASH: Internal server error loop:", error.message);
         console.log("=========================================");
         return res.status(500).json({ message: "Internal server error" });
     }
