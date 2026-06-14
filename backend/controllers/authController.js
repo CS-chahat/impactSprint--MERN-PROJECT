@@ -124,6 +124,11 @@ const register = async (req, res) => {
 // @route   POST /api/auth/login
 // @desc    Login (Admin, NGO, or Professional)
 // @access  Public
+// ──────────────────────────────────────────
+// @route   POST /api/auth/login
+// @desc    Login (Admin, NGO, or Professional)
+// @access  Public
+// ──────────────────────────────────────────
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -138,7 +143,8 @@ const login = async (req, res) => {
             account = await Admin.findOne({ email });
             console.log(`🔍 DB SEARCH: Admin find result -> ${account ? "DOCUMENT FOUND" : "NOT FOUND IN DB"}`);
         } else {
-            account = await User.findOne({ email });
+            // 💡 FIX: Added .select("+password") to explicitly force Mongoose to fetch the hash from the DB row!
+            account = await User.findOne({ email }).select("+password");
             console.log(`🔍 DB SEARCH: User find result -> ${account ? "DOCUMENT FOUND" : "NOT FOUND IN DB"}`);
         }
 
@@ -161,7 +167,6 @@ const login = async (req, res) => {
         console.log("🎯 LOGIN SUCCESS: Packaging response payload...");
         console.log("=========================================");
         
-        // 💡 FIX: Route the authenticated admin through your exact token system format!
         return sendTokenResponse(account, 200, res);
 
     } catch (error) {
@@ -170,7 +175,6 @@ const login = async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 };
-
 // ──────────────────────────────────────────
 // @route   GET /api/auth/me
 // @desc    Get currently logged-in user
