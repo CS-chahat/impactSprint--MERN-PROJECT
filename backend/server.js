@@ -51,11 +51,20 @@ app.get("*", (req, res) => {
 const PORT = process.env.PORT || 5001;
 
 const start = async () => {
-    await connectDB();
-    await seedAdmin(); // ensure fixed admin exists on every boot
-    app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Backend running on port ${PORT}`);
-});
+    try {
+        // 1. Fire off the database connection link
+        await connectDB();
+        
+        // 2. Immediately trigger our custom vocal seed script
+        await seedAdmin();
+        
+        // 3. Bind the network port listener to go live
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Backend running on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error("❌ Critical server boot failure:", error.message);
+    }
 };
 
 start();
