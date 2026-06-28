@@ -258,8 +258,7 @@ export default function AdminDashboard({ navigate, onCert }) {
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                        <BtnSecondary style={{ fontSize: 12 }}>Export Report</BtnSecondary>
-                        <BtnPrimary style={{ fontSize: 12 }} onClick={() => navigate('ngo')}>NGO Portal →</BtnPrimary>
+                        <BtnPrimary style={{ fontSize: 12 }}>Export Report</BtnPrimary>
                     </div>
                 </div>
 
